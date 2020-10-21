@@ -3,25 +3,27 @@ elasticdump
 
 Tools for moving and saving indices.
 
-![picture](https://raw.github.com/taskrabbit/elasticsearch-dump/master/elasticdump.jpg)
+![picture](https://raw.github.com/elasticsearch-dump/elasticsearch-dump/master/elasticdump.jpg)
 
 ---
 
 [![Nodei stats](https://nodei.co/npm/elasticdump.png?downloads=true)](https://npmjs.org/package/elasticdump)
+<br />
+[![DockerHub Badge](https://dockeri.co/image/elasticdump/elasticsearch-dump)](https://hub.docker.com/r/elasticdump/elasticsearch-dump/)
 [![DockerHub Badge](https://dockeri.co/image/taskrabbit/elasticsearch-dump)](https://hub.docker.com/r/taskrabbit/elasticsearch-dump/)
 
-[![Build Status](https://secure.travis-ci.org/taskrabbit/elasticsearch-dump.png?branch=master)](http://travis-ci.org/taskrabbit/elasticsearch-dump)
+[![Build Status](https://secure.travis-ci.org/elasticsearch-dump/elasticsearch-dump.png?branch=master)](http://travis-ci.org/elasticsearch-dump/elasticsearch-dump)
 [![Downloads](https://img.shields.io/npm/dm/elasticdump.svg)](https://npmjs.com/elasticdump)
 
 
 ## Version Warnings!
 
-- Version `1.0.0` of Elasticdump changes the format of the files created by the dump.  Files created with version `0.x.x` of this tool are likely not to work with versions going forward.  To learn more about the breaking changes, vist the release notes for version [`1.0.0`](https://github.com/taskrabbit/elasticsearch-dump/releases/tag/v1.0.0).  If you recive an "out of memory" error, this is probaly the cause.
+- Version `1.0.0` of Elasticdump changes the format of the files created by the dump.  Files created with version `0.x.x` of this tool are likely not to work with versions going forward.  To learn more about the breaking changes, vist the release notes for version [`1.0.0`](https://github.com/elasticsearch-dump/elasticsearch-dump/releases/tag/v1.0.0).  If you recive an "out of memory" error, this is probably or most likely the cause.
 - Version `2.0.0` of Elasticdump removes the `bulk` options.  These options were buggy, and differ between versions of Elasticsearch.  If you need to export multiple indexes, look for the `multielasticdump` section of the tool.
 - Version `2.1.0` of Elasticdump moves from using `scan/scroll` (ES 1.x) to just `scan` (ES 2.x).  This is a backwards-compatible change within Elasticsearch, but performance may suffer on Elasticsearch versions prior to 2.x.
 - Version `3.0.0` of Elasticdump has the default queries updated to only work for ElasticSearch version 5+.  The tool *may* be compatible with earlier versions of Elasticsearch, but our version detection method may not work for all ES cluster topologies
 - Version `5.0.0` of Elasticdump contains a breaking change for the s3 transport. _s3Bucket_ and _s3RecordKey_ params are no longer supported please use s3urls instead
-- Version `6.1.0` and higher of Elasticdump contains a change to the upload/dump process. This change allows for overlapping promise processing. The benefit of which is improved performance due increased parallel processing, but a side-effect exists where-by records (data-set) aren't processing in sequential order (ordering is no longer guaranteed)
+- Version `6.1.0` and higher of Elasticdump contains a change to the upload/dump process. This change allows for overlapping promise processing. The benefit of which is improved performance due increased parallel processing, but a side-effect exists where-by records (data-set) aren't processed in a sequential order (the ordering is no longer guaranteed)
 
 ## Installing
 
@@ -41,7 +43,7 @@ elasticdump
 
 ### Standard Install
 
-elasticdump works by sending an `input` to an `output`.  Both can be either an elasticsearch URL or a File.
+Elasticdump works by sending an `input` to an `output`. Both can be either an elasticsearch URL or a File.
 
 Elasticsearch:
 - format:  `{protocol}://{host}:{port}/{index}`
@@ -92,7 +94,7 @@ elasticdump \
 elasticdump \
   --input=http://production.es.com:9200/my_index \
   --output=query.json \
-  --searchBody='{"query":{"term":{"username": "admin"}}}'
+  --searchBody="{\"query\":{\"term\":{\"username\": \"admin\"}}}"
 
 # Copy a single shard data:
 elasticdump \
@@ -143,6 +145,24 @@ elasticdump \
   --s3SecretAccessKey "${access_key_secret}" \
   --input=http://production.es.com:9200/my_index \
   --output "s3://${bucket_name}/${file_name}.json"
+
+# Import data from MINIO (s3 compatible) into ES (using s3urls)
+elasticdump \
+  --s3AccessKeyId "${access_key_id}" \
+  --s3SecretAccessKey "${access_key_secret}" \
+  --input "s3://${bucket_name}/${file_name}.json" \
+  --output=http://production.es.com:9200/my_index
+  --s3ForcePathStyle true
+  --s3Endpoint https://production.minio.co
+
+# Export ES data to MINIO (s3 compatible) (using s3urls)
+elasticdump \
+  --s3AccessKeyId "${access_key_id}" \
+  --s3SecretAccessKey "${access_key_secret}" \
+  --input=http://production.es.com:9200/my_index \
+  --output "s3://${bucket_name}/${file_name}.json"
+  --s3ForcePathStyle true
+  --s3Endpoint https://production.minio.co
 ```
 
 
@@ -176,36 +196,36 @@ elasticdump \
 ```
 
 ### Docker install
-If you prefer using docker to use elasticdump, you can download this project from docker hub :
+If you prefer using docker to use elasticdump, you can download this project from docker hub:
 ```bash
-docker pull taskrabbit/elasticsearch-dump
+docker pull elasticdump/elasticsearch-dump
 ```
 Then you can use it just by :
-- using `docker run --rm -ti taskrabbit/elasticsearch-dump`
+- using `docker run --rm -ti elasticdump/elasticsearch-dump`
 - you'll need to mount your file storage dir `-v <your dumps dir>:<your mount point>` to your docker container
 
 Example:
 ```bash
 # Copy an index from production to staging with mappings:
-docker run --rm -ti taskrabbit/elasticsearch-dump \
+docker run --rm -ti elasticdump/elasticsearch-dump \
   --input=http://production.es.com:9200/my_index \
   --output=http://staging.es.com:9200/my_index \
   --type=mapping
-docker run --rm -ti taskrabbit/elasticsearch-dump \
+docker run --rm -ti elasticdump/elasticsearch-dump \
   --input=http://production.es.com:9200/my_index \
   --output=http://staging.es.com:9200/my_index \
   --type=data
 
 # Backup index data to a file:
-docker run --rm -ti -v /data:/tmp taskrabbit/elasticsearch-dump \
+docker run --rm -ti -v /data:/tmp elasticdump/elasticsearch-dump \
   --input=http://production.es.com:9200/my_index \
   --output=/tmp/my_index_mapping.json \
   --type=data
 ```
 
-If you need to run using `localhost` as your ES host :
+If you need to run using `localhost` as your ES host:
 ```bash
-docker run --net=host --rm -ti taskrabbit/elasticsearch-dump \
+docker run --net=host --rm -ti elasticdump/elasticsearch-dump \
   --input=http://staging.es.com:9200/my_index \
   --output=http://localhost:9200/my_index \
   --type=data
@@ -288,6 +308,13 @@ Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]
                         `'{"query": { "match_all": {} }, "stored_fields": ["*"], "_source": true }'`
                       else
                         `'{"query": { "match_all": {} }, "fields": ["*"], "_source": true }'`
+--searchWithTemplate
+                    Enable to use Search Template when using --searchBody
+                    If using Search Template then searchBody has to consist of "id" field and "params" objects
+                    If "size" field is defined within Search Template, it will be overridden by --size parameter
+                    See https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html for 
+                    further information
+                    (default: false)
 --headers
                     Add custom headers to Elastisearch requests (helpful when
                     your Elasticsearch instance sits behind a proxy)
@@ -304,6 +331,10 @@ Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]
 --ignore-errors
                     Will continue the read/write loop on write error
                     (default: false)
+--scrollId
+                    The last scroll Id returned from elasticsearch. 
+                    This will allow dumps to be resumed used the last scroll Id &
+                    `scrollTime` has not expired.
 --scrollTime
                     Time the nodes will hold the requested search in order.
                     (default: 10m)
@@ -352,8 +383,8 @@ Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]
                     be appended to the output stream?
                     (default: true, except for `$`)
 --transform
-                    A javascript, which will be called to modify documents
-                    before writing it to destination. global variable 'doc'
+                    A method/function which can be called to modify documents
+                    before writing to a destination. A global variable 'doc'
                     is available.
                     Example script for computing a new field 'f2' as doubled
                     value of field 'f1':
@@ -379,8 +410,20 @@ Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]
                     Override the default aws ini file name when using --awsIniFileProfile
                     Filename is relative to ~/.aws/
                     (default: config)
+--awsService
+                    Sets the AWS service that the signature will be generated for
+                    (default: calculated from hostname or host)
+--awsRegion
+                    Sets the AWS region that the signature will be generated for
+                    (default: calculated from hostname or host)
+--awsUrlRegex
+                    Regular expression that defined valied AWS urls that should be signed
+                    (default: ^https?:\\.*.amazonaws.com.*$)
 --support-big-int   
                     Support big integer numbers
+--big-int-fields   
+                    Sepcifies a comma-seperated list of fields that should be checked for big-int support
+                    (default '')
 --retryAttempts  
                     Integer indicating the number of times a request should be automatically re-attempted before failing
                     when a connection fails with one of the following errors `ECONNRESET`, `ENOTFOUND`, `ESOCKETTIMEDOUT`,
@@ -445,6 +488,12 @@ Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]
                     Socks5 host address
 --inputSocksPort, --outputSocksPort
                     Socks5 host port
+--handleVersion
+                    Tells elastisearch transport to handle the `_version` field if present in the dataset
+                    (default : false)
+--versionType
+                    Elasticsearch versioning types. Should be `internal`, `external`, `external_gte`, `force`.
+                    NB : Type validation is handled by the bulk endpoint and not by elasticsearch-dump
 --help
                     This page
 ```
@@ -465,7 +514,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --input="https://localhost:9200" --ou
 ```
 
 ## MultiElasticDump
-This package also ships with a second binary, `multielasticdump`.  This is a wrapper for the normal elasticdump binary, which provides a limited option set, but will run elasticdump in parallel across many indexes at once.  It runs a process which forks into `n` (default your running host's # of CPUs) subprocesses running elasticdump.
+
+This package also ships with a second binary, `multielasticdump`.  This is a wrapper for the normal elasticdump binary, which provides a limited option set, but will run elasticdump in parallel across many indexes at once. It runs a process which forks into `n` (default your running host's # of CPUs) subprocesses running elasticdump.
 
 The limited option set includes:
 
@@ -479,12 +529,15 @@ The limited option set includes:
 - `offset`:     `0`,
 - `direction`:   `dump`,
 - `ignoreType`:   ``
+- `includeType`:   ``
 - `prefix`:   `'''`
 - `suffix`:   `''`
 - `interval`:     `1000`
 - `searchbody`: `null`
 - `transform`: `null`
 - `support-big-int`: `false`
+- `big-int-fields`: ``
+- `ignoreChildError`: `false`
 
 If the `--direction` is `dump`, which is the default, `--input` MUST be a URL for the base location of an ElasticSearch server (i.e. `http://localhost:9200`) and `--output` MUST be a directory. Each index that does match will have a data, mapping, and analyzer file created.
 
@@ -496,6 +549,11 @@ For loading files that you have dumped from multi-elasticsearch, `--direction` s
 and `interval` allows control over the interval for spawning a dump/load for a new index. For small indices this can be set to `0` to reduce delays and optimize performance
 i.e analyzer,alias types are ignored by default
 
+`--includeType` allows a type to be included in the dump/load. Six options are supported - `data,mapping,analyzer,alias,settings,template`. 
+
+`ignoreChildError` allows multi-elasticdump to continue if a child throws an error.
+
+
 New options, `--suffix` allows you to add a suffix to the index name being created e.g. `es6-${index}` and
 `--prefix` allows you to add a prefix to the index name e.g. `${index}-backup-2018-03-13`.
 
@@ -506,7 +564,7 @@ New options, `--suffix` allows you to add a suffix to the index name being creat
 # backup ES indices & all their type to the es_backup folder
 multielasticdump \
   --direction=dump \
-  --match='^.*$'
+  --match='^.*$' \
   --input=http://production.es.com:9200 \
   --output=/tmp/es_backup
 
@@ -515,9 +573,9 @@ multielasticdump \
 # NB: analyzer & alias types are ignored by default
 multielasticdump \
   --direction=dump \
-  --match='^.*-index$'
+  --match='^.*-index$'\
   --input=http://production.es.com:9200 \
-  --ignoreType='mapping,settings,template'
+  --ignoreType='mapping,settings,template' \
   --output=/tmp/es_backup
 ```
 
@@ -541,21 +599,20 @@ An example transform for anonymizing data on-the-fly can be found in the `transf
 
 ## Notes
 
-- this tool is likely to require Elasticsearch version 1.0.0 or higher
-- elasticdump (and elasticsearch in general) will create indices if they don't exist upon import
-- when exporting from elasticsearch, you can have export an entire index (`--input="http://localhost:9200/index"`) or a type of object from that index (`--input="http://localhost:9200/index/type"`).  This requires ElasticSearch 1.2.0 or higher
-- If elasticsearch is in a sub-directory, index and type must be provided with a separate argument (`--input="http://localhost:9200/sub/directory --input-index=index/type"`). Using `--input-index=/` will include all indices and types.
-- we are using the `put` method to write objects.  This means new objects will be created and old objects with the same ID will be updated
-- The `file` transport will not overwrite any existing files by default, it will throw an exception of the file already exists. Use `--overwrite` instead.
+- This tool is likely to require Elasticsearch version 1.0.0 or higher
+- Elasticdump (and Elasticsearch in general) will create indices if they don't exist upon import
+- When exporting from elasticsearch, you can export an entire index (`--input="http://localhost:9200/index"`) or a type of object from that index (`--input="http://localhost:9200/index/type"`). This requires ElasticSearch 1.2.0 or higher
+- If the path to our elasticsearch installation is in a sub-directory, the index and type must be provided with a separate argument (`--input="http://localhost:9200/sub/directory --input-index=index/type"`).Using `--input-index=/` will include all indices and types.
+- We can use the `put` method to write objects.  This means new objects will be created and old objects with the same ID be updated
+- The `file` transport will not overwrite any existing files by default, it will throw an exception if the file already exists. You can make use of `--overwrite` instead.
 - If you need basic http auth, you can use it like this: `--input=http://name:password@production.es.com:9200/my_index`
-- if you choose a stdio output (`--output=$`), you can also request a more human-readable output with `--format=human`
-- if you choose a stdio output (`--output=$`), all logging output will be suppressed
-- if you are using Elasticsearch version 6.0.0 or higher the `offset` parameter is no longer allowed in the scrollContext
-- ES 6.x.x & higher no longer support the `template` property for `_template` all templates prior to ES 6.0 has to be upgraded to use `index_patterns`
-- ES 7.x.x & higher no longer supports `type` property. all templates prior to ES 6.0 has to be upgraded to remove the type property
+- If you choose a stdio output (`--output=$`), you can also request a more human-readable output with `--format=human`
+- If you choose a stdio output (`--output=$`), all logging output will be suppressed
+- If you are using Elasticsearch version 6.0.0 or higher the `offset` parameter is no longer allowed in the scrollContext
+- ES 6.x.x & higher no longer support the `template` property for `_template`. All templates prior to ES 6.0 has to be upgraded to use `index_patterns`
+- ES 7.x.x & higher no longer supports `type` property. All templates prior to ES 6.0 has to be upgraded to remove the type property
 - ES 5.x.x ignores offset (from) parameter in the search body. All records will be returned
 - ES 6.x.x [from](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/breaking-changes-6.0.html#_scroll) parameter can no longer be used in the search request body when initiating a scroll
-
+- Ensure JSON in the searchBody properly escaped to avoid parsing issues : https://www.freeformatter.com/json-escape.html
+- Dropped support for Node.JS 8. Node.JS 10+ is now requireed.
 Inspired by https://github.com/crate/elasticsearch-inout-plugin and https://github.com/jprante/elasticsearch-knapsack
-
-Built at [TaskRabbit](https://www.taskrabbit.com)
